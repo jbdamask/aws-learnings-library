@@ -1,0 +1,75 @@
+# AWS Learnings
+
+> Hard-won lessons from building AWS apps with coding agents. Each linked file
+> is one self-contained lesson. Fetch only the lessons relevant to the AWS
+> services in the current task.
+
+## API Gateway
+
+- [Methods vs Resources are different things](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/apigw-001.md): Resources define URL paths but you also need Methods with Lambda integrations, or you get "Missing Authentication Token".
+- [Deployments don't auto-update](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/apigw-002.md): AWS::ApiGateway::Deployment is immutable; new methods 403/404 until you force a redeploy.
+- [CORS requires OPTIONS methods](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/apigw-003.md): Browsers preflight cross-origin POST/PUT/DELETE; without an OPTIONS method API Gateway returns 403.
+- [Lambda::Permission required per-function](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/apigw-004.md): Each Lambda invoked by API Gateway needs its own AWS::Lambda::Permission, or you get 500 with zero Lambda logs.
+- [WebSocket 10-minute idle timeout](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/apigw-005.md): WebSocket connections drop after 10 minutes of silence — normal behavior; reconnect or send keepalive pings.
+
+## Lambda
+
+- [Handler paths must match build output](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/lambda-001.md): esbuild outputs to subdirectories; the Handler must include the directory prefix or you get "Handler not found".
+- [ES modules use .mjs extension](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/lambda-002.md): esbuild format 'esm' outputs .mjs, not .js — package the correct extension or your zip is empty.
+- [S3 Lambda zips can go stale](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/lambda-003.md): Uploading a new zip to S3 doesn't update running Lambdas; explicitly update each function's code.
+- [Warm containers leak module-level state](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/lambda-004.md): Module-level objects persist across warm invocations; bind per-request identity inside the handler, never at module scope.
+
+## IAM
+
+- [Role names are global per account](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/iam-001.md): IAM role names must be unique account-wide; define a role in one stack and import it in others.
+- [SSM permissions for dynamic AMI parameters](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/iam-002.md): EC2 templates using AWS::SSM::Parameter::Value for AMI lookup require ssm:GetParameters on the Lambda role.
+- [CloudFormation uses caller credentials for all resources](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/iam-003.md): Lambda-invoked CloudFormation creates every resource with the Lambda's role; grant permissions for every resource type.
+- [IAM resources require full role lifecycle permissions](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/iam-004.md): EC2 instance profiles need more than iam:PassRole — grant full role and instance-profile lifecycle permissions.
+- [Spot via ASG requires launch template permissions](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/iam-005.md): Spot via Auto Scaling uses EC2 Launch Templates — grant ec2:CreateLaunchTemplate and the Auto Scaling permissions.
+
+## S3
+
+- [Public access may be blocked at account level](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/s3-001.md): Account-level Block Public Access overrides bucket policies; use CloudFront with Origin Access Control instead.
+- [Browser direct-to-S3 uploads need bucket CORS](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/s3-002.md): Presigned-URL uploads bypass API Gateway, so the browser preflights S3 directly — use a dedicated uploads bucket with CORS.
+
+## CloudFront
+
+- [Compression requires caching](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/cloudfront-001.md): EnableAcceptEncodingGzip is invalid on a cache policy with caching disabled; set it false for no-cache policies.
+- [Signed-cookie key rotation must use two-key overlap](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/cloudfront-002.md): Hard-cutover rotation 403s every active signed cookie for ~1h; keep both keys in the KeyGroup and sweep old keys after a grace window.
+
+## CloudFormation
+
+- [Output names must match query keys](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/cfn-001.md): Deploy scripts return empty when the queried OutputKey doesn't match the template's actual output name.
+- [Cross-stack references use export names](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/cfn-002.md): Fn::ImportValue references the Export Name, which can differ from the Output Key.
+- [Lambda needs S3 permissions for TemplateURL](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/cfn-003.md): CloudFormation reads a TemplateURL with the caller's credentials; the Lambda role needs s3:GetObject on the template.
+- [Set default parameter values to prevent overwrites](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/cfn-004.md): Direct Lambda env-var edits get reverted on the next deploy; set sensible template parameter defaults.
+- [Stack deletion requires the same permissions as creation](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/cfn-005.md): DELETE_FAILED leaves orphaned billing resources; the caller role needs delete permissions plus extras like DescribeScalingActivities.
+- [Templates over 51,200 bytes require S3 upload](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/cfn-006.md): Templates above the inline limit must deploy via S3 — add --s3-bucket and --s3-prefix to aws cloudformation deploy.
+- [Deploy the API Gateway stack before the Lambdas stack](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/cfn-007.md): The lambdas stack imports API Gateway resource IDs, so deploy the api-gateway stack first.
+
+## Secrets Management
+
+- [Never pass secrets as NoEcho parameters](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/secrets-001.md): NoEcho parameters can be clobbered and aren't recoverable; store secrets in Secrets Manager and fetch ARNs at runtime.
+
+## Frontend
+
+- [Trailing slashes cause double-slash URLs](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/frontend-001.md): A base URL ending in / plus a path starting with / yields // — strip the trailing slash from the base URL.
+
+## EC2
+
+- [awscli apt package does not exist on Ubuntu 24.04](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/ec2-001.md): No awscli apt package on 24.04; with set -e it silently kills the whole UserData script — use the official AWS CLI v2 installer.
+- [set -e in UserData makes failures silent and total](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/ec2-002.md): CloudFormation reports CREATE_COMPLETE when the instance launches, not when UserData finishes; one failed command leaves an unconfigured box.
+
+## EventBridge
+
+- [PutEvents can return 200 OK with failed entries](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/eventbridge-001.md): PutEvents returns HTTP 200 even when individual entries fail; always check FailedEntryCount.
+- [Spot interruption rule must target the Lambda ARN](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/eventbridge-002.md): The rule must target the Lambda ARN via !GetAtt Function.Arn, not the bare function name.
+
+## SQS
+
+- [Async job processing: idempotency is mandatory](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/sqs-001.md): SQS is at-least-once; without a DynamoDB idempotency guard, jobs silently re-run expensive work on every re-delivery.
+
+## Spot Interruptions
+
+- [Testing spot interruptions without waiting for real events](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/spot-001.md): Invoke the handler Lambda directly with a synthetic payload — EventBridge blocks aws.* source PutEvents.
+- [Handler needs the same env vars as the creation Lambda](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/spot-002.md): If the interruption handler auto-replaces instances, it needs the same broad environment variables as the server-creation Lambda.
