@@ -68,6 +68,7 @@
 ## SQS
 
 - [Async job processing: idempotency is mandatory](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/sqs-001.md): SQS is at-least-once; without a DynamoDB idempotency guard, jobs silently re-run expensive work on every re-delivery.
+- [A crashing Lambda can bypass the DLQ](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/sqs-002-29.md): An OOM/hard-crash replays the same SQS delivery in place (same RequestId) without incrementing ApproximateReceiveCount, so maxReceiveCount never trips and the poison message loops forever instead of dead-lettering.
 
 ## Spot Interruptions
 
