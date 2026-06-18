@@ -31,6 +31,7 @@
 
 - [Public access may be blocked at account level](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/s3-001.md): Account-level Block Public Access overrides bucket policies; use CloudFront with Origin Access Control instead.
 - [Browser direct-to-S3 uploads need bucket CORS](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/s3-002.md): Presigned-URL uploads bypass API Gateway, so the browser preflights S3 directly — use a dedicated uploads bucket with CORS.
+- [Enable S3 versioning by default on data you don't want to lose](https://raw.githubusercontent.com/jbdamask/aws-learnings-library/main/lessons/s3-003-30.md): Turn on S3 versioning for any bucket whose data matters — WORM or write-many — so accidental deletes/overwrites are recoverable; the only reason to skip it is if losing the data is genuinely fine.
 
 ## CloudFront
 
